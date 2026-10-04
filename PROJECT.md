@@ -314,14 +314,55 @@ changes:
 
 **Как основные сценарии будут запускаться и проверяться при недоступности внешних сервисов:** локальный API и база с учебными данными. Проверки выполняются запросами от имени разных пользователей и сервисных клиентов. Для проверки доступа используются две конфигурации, оба окружения и несколько пользователей с разными правами.
 
-**Что команда реализует первым, чтобы получить запускаемую версию:** серверный API с `GET /health` и инструкцией локального запуска.
+Что уже реализовано: минимальный ASP.NET Core API с `GET /health`. Хранилище, аутентификация, проверка YAML и предметные операции пока планируются. Инструкция запуска технической основы приведена ниже.
 
 ## 10. Локальный запуск
 
-**Требования к окружению:** .NET SDK 10.
+Требования к окружению: стабильный .NET SDK 10.0, начиная с 10.0.100, включая ASP.NET Core. Версия SDK выбирается согласно `global.json`.
 
-**Команды установки и запуска:** —
+Команды выполняются из корня репозитория. Для текущего запуска не нужны база данных, учётные данные или внешние сервисы; сторонних NuGet-пакетов нет. Сервер слушает `127.0.0.1:5080`; порт должен быть свободен. Остановка — `Ctrl+C`.
 
-**Команда или запрос для проверки:** `GET /health` локального сервера.
+### Windows / PowerShell
 
-**Ожидаемый результат:** HTTP `200 OK` с сообщением о работе сервиса.
+Если SDK распакован в `.dotnet` в корне репозитория, команды выберут его; иначе используется системный `dotnet`. Локальный SDK не хранится в Git.
+
+```powershell
+$dotnetPath = if (Test-Path -LiteralPath '.\.dotnet\dotnet.exe') { '.\.dotnet\dotnet.exe' } else { 'dotnet' }
+& $dotnetPath --version
+& $dotnetPath restore .\src\ConfigRelease.Api\ConfigRelease.Api.csproj --configfile .\NuGet.Config
+& $dotnetPath build .\src\ConfigRelease.Api\ConfigRelease.Api.csproj --no-restore
+& $dotnetPath run --project .\src\ConfigRelease.Api\ConfigRelease.Api.csproj --no-build --no-launch-profile --urls http://127.0.0.1:5080
+```
+
+В другом окне PowerShell:
+
+```powershell
+$healthResponse = Invoke-WebRequest -Uri 'http://127.0.0.1:5080/health'
+$healthResponse.StatusCode
+$healthResponse.Content
+```
+
+### Linux / macOS
+
+При установленном .NET SDK 10.0:
+
+```sh
+dotnet --version
+dotnet restore src/ConfigRelease.Api/ConfigRelease.Api.csproj --configfile NuGet.Config
+dotnet build src/ConfigRelease.Api/ConfigRelease.Api.csproj --no-restore
+dotnet run --project src/ConfigRelease.Api/ConfigRelease.Api.csproj --no-build --no-launch-profile --urls http://127.0.0.1:5080
+```
+
+В другом терминале:
+
+```sh
+curl -i http://127.0.0.1:5080/health
+```
+
+Ожидаемый результат: HTTP `200 OK`, тип ответа `application/json` и тело:
+
+```json
+{"status":"ok","service":"ConfigRelease"}
+```
+
+Запуск проверен на Windows; отдельная проверка на Linux/macOS пока не выполнялась. Ответ `/health` подтверждает работу технической основы, а не выполнение предметных сценариев или требований безопасности.
