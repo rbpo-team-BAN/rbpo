@@ -1,0 +1,21 @@
+# Build outputs and local SDK.
+**/bin/
+**/obj/
+.dotnet/
+.tools/
+
+# IDE and local settings.
+.vs/
+.idea/
+*.user
+*.suo
+.env
+.env.*
+!.env.example
+
+# Local application data and test results.
+data/
+*.db
+*.db-shm
+*.db-wal
+TestResults/
